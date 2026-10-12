@@ -11,7 +11,7 @@ import sys
 import tempfile
 from typing import List, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
@@ -187,6 +187,43 @@ def serve_ui():
             }
         )
     raise HTTPException(status_code=404, detail="Directory Finder UI not found")
+
+# Direct Vercel Serverless Function rewrites handlers
+@app.get("/api/index.py", include_in_schema=False)
+@app.get("/api/index", include_in_schema=False)
+async def vercel_index_get(request: Request):
+    matched = (request.headers.get("x-matched-path") or request.headers.get("x-forwarded-uri") or "").lower()
+    if "health" in matched or not matched or matched.endswith(".py"):
+        return health_check()
+    return serve_ui()
+
+@app.post("/api/index.py", include_in_schema=False)
+@app.post("/api/index", include_in_schema=False)
+async def vercel_index_post(request: Request):
+    matched = (request.headers.get("x-matched-path") or request.headers.get("x-forwarded-uri") or "").lower()
+    if "extract-schools" in matched:
+        form = await request.form()
+        uploaded = form.get("file")
+        return await extract_schools_from_file_endpoint(uploaded)
+    body = await request.json()
+    payload = DirectorySearchRequest(**body)
+    return find_directories_endpoint(payload)
+
+# Fallback catch-all for any variations of API paths
+@app.api_route("/api/{subpath:path}", methods=["GET", "POST"], include_in_schema=False)
+async def catch_all_api(request: Request, subpath: str):
+    clean = subpath.strip("/").lower()
+    if "health" in clean:
+        return health_check()
+    if "find-directories" in clean:
+        body = await request.json()
+        payload = DirectorySearchRequest(**body)
+        return find_directories_endpoint(payload)
+    if "extract-schools" in clean:
+        form = await request.form()
+        uploaded = form.get("file")
+        return await extract_schools_from_file_endpoint(uploaded)
+    raise HTTPException(status_code=404, detail=f"API endpoint not found: /api/{subpath}")
 
 if __name__ == "__main__":
     import uvicorn
