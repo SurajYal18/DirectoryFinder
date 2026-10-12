@@ -62,6 +62,7 @@ if not os.path.isfile(INDEX_HTML_PATH):
 
 # Health Check Endpoint
 @app.get("/api/health")
+@app.get("/health")
 def health_check():
     gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
     return {
@@ -79,6 +80,7 @@ class DirectorySearchRequest(BaseModel):
 
 # Main Directory Discovery Endpoint
 @app.post("/api/find-directories")
+@app.post("/find-directories")
 def find_directories_endpoint(payload: DirectorySearchRequest):
     schools = []
     if payload.text and payload.text.strip():
@@ -138,6 +140,7 @@ def find_directories_endpoint(payload: DirectorySearchRequest):
 
 # File Upload Extraction Endpoint (PDF, Excel, CSV, TXT)
 @app.post("/api/extract-schools-from-file")
+@app.post("/extract-schools-from-file")
 async def extract_schools_from_file_endpoint(file: UploadFile = File(...)):
     content = await file.read()
     fname = (file.filename or "upload").lower()
