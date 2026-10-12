@@ -371,8 +371,11 @@
     let currentFilter = "all";
     let searchQuery = "";
     let timerInterval = null;
-    let secondsElapsed = 0;
-    let API_BASE = localStorage.getItem("directory_finder_api") || (window.location.protocol.startsWith("http") ? window.location.origin : "http://127.0.0.1:8001");
+    const storedApi = localStorage.getItem("directory_finder_api");
+    const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+    let API_BASE = (!isLocal && window.location.protocol.startsWith("http"))
+      ? (storedApi && !storedApi.includes("127.0.0.1") && !storedApi.includes("localhost") ? storedApi : window.location.origin)
+      : (storedApi || (window.location.protocol.startsWith("http") ? window.location.origin : "http://127.0.0.1:8001"));
 
     function init() {
       try {
@@ -1097,7 +1100,7 @@
 
     function saveSettings() {
       API_BASE = document.getElementById("api-url-input").value.trim().replace(/\/$/, "");
-      localStorage.setItem("faculty_scraper_api", API_BASE);
+      localStorage.setItem("directory_finder_api", API_BASE);
       toggleSettingsModal();
       checkHealth();
     }

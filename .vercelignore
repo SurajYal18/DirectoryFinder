@@ -1,0 +1,11 @@
+.env
+.env.*
+__pycache__/
+*.py[cod]
+exports/
+*.xlsx
+*.csv
+*.txt
+!requirements.txt
+.git/
+start.bat

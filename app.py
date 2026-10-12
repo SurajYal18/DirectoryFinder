@@ -55,6 +55,10 @@ app.add_middleware(
 )
 
 INDEX_HTML_PATH = os.path.join(BASE_DIR, "index.html")
+if not os.path.isfile(INDEX_HTML_PATH):
+    parent_index = os.path.join(os.path.dirname(BASE_DIR), "index.html")
+    if os.path.isfile(parent_index):
+        INDEX_HTML_PATH = parent_index
 
 # Health Check Endpoint
 @app.get("/api/health")
@@ -138,7 +142,8 @@ async def extract_schools_from_file_endpoint(file: UploadFile = File(...)):
     content = await file.read()
     fname = (file.filename or "upload").lower()
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(fname)[1]) as tmp:
+    suffix = os.path.splitext(fname)[1] or ".tmp"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix, dir=tempfile.gettempdir()) as tmp:
         tmp.write(content)
         tmp_path = tmp.name
 
@@ -152,7 +157,10 @@ async def extract_schools_from_file_endpoint(file: UploadFile = File(...)):
             schools = extract_schools_from_text(text)
     finally:
         if os.path.exists(tmp_path):
-            os.remove(tmp_path)
+            try:
+                os.remove(tmp_path)
+            except Exception:
+                pass
 
     return {
         "filename": file.filename,

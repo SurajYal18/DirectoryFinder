@@ -13,6 +13,7 @@ import sys
 import re
 import io
 import argparse
+import tempfile
 from urllib.parse import urlparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
@@ -560,7 +561,10 @@ def process_school_batch(schools: list, gemini_key: str = "", max_workers: int =
 
 def save_and_export_results(results: list, output_excel: str = "Schools_Verified_Directories.xlsx"):
     """Saves ONLY verified active directories to Excel, CSV, and clean text list."""
-    exports_dir = os.path.join(BACKEND_DIR, "exports")
+    if os.getenv("VERCEL") or not os.access(BACKEND_DIR, os.W_OK):
+        exports_dir = os.path.join(tempfile.gettempdir(), "exports")
+    else:
+        exports_dir = os.path.join(BACKEND_DIR, "exports")
     os.makedirs(exports_dir, exist_ok=True)
     
     verified_results = [
